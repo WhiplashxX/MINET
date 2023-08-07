@@ -5,6 +5,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import matplotlib
+from sklearn.model_selection import train_test_split
+
 
 # 读取数据
 data = pd.read_csv('D:\\dataset1.csv', low_memory=False)
@@ -146,6 +148,20 @@ processed_data_data = processed_data[processed_data['grade'] > 0]
 # processed_data_data.reset_index(drop=True, inplace=True)  # 重置索引并且丢弃原来的索引列
 # processed_data_data['index'] = processed_data_data.index + 1  # 添加新的列作为顺序标号
 processed_data_data.to_pickle('processed_data.pkl')
+# 划分数据集为训练集、验证集和测试集
+train_data, temp_data = train_test_split(processed_data_data, test_size=0.3, random_state=42)
+eval_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
+
+# 保存划分后的数据集为CSV文件
+train_data.to_csv('train_dataset.csv', index=False)
+eval_data.to_csv('val_dataset.csv', index=False)
+test_data.to_csv('test_dataset.csv', index=False)
+
+train_data.to_pickle('train_dataset.pkl')
+eval_data.to_pickle('val_dataset.pkl')
+test_data.to_pickle('test_dataset.pkl')
+
+
 
 #
 # matplotlib.use('TkAgg')  # 设置绘图后端为TkAgg

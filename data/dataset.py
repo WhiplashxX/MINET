@@ -12,15 +12,17 @@ import pandas as pd
 
 class basedata():
     def __init__(self, n, n_feature=6) -> None:
-        self.y = None
-        self.t = None
-        self.x = None
+        self.x, self.t, self.y = self.load_data()
         self.num_data = n
         self.n_feature = n_feature
         self.load_data()
-        self.true_pdf = self.get_correct_pdf()
 
-    def load_data(self):
+        # self.true_pdf = self.get_correct_pdf()
+
+    def __len__(self):
+        return len(self.x)  # 你的数据的长度
+
+    def load_data_x(self):
         # Load your preprocessed data from CSV
         data = pd.read_pickle('processed_data.pkl')
         data.fillna(0, inplace=True)
@@ -29,49 +31,65 @@ class basedata():
             data[col] = pd.to_numeric(data[col], errors='coerce')
         x = torch.tensor(data[['LoE_DI', 'age_DI', 'primary_reason', 'learner_type', 'expected_hours_week',
                                     'discipline', 'course_length']].values, dtype=torch.float32)
-        t = torch.tensor(data['grade_reqs', 'nforum_posts', 'ndays_act'].values, dtype=torch.float32)
-        y = torch.tensor(data['grade', 'explored', 'nevents', 'completed_%'].values, dtype=torch.float32)
-        return x, t, y
+        return x
+    def load_data_t(self):
+        # Load your preprocessed data from CSV
+        data = pd.read_pickle('processed_data.pkl')
+        data.fillna(0, inplace=True)
+        columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
+        for col in columns_to_convert:
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+        t = torch.tensor(data[['grade_reqs', 'nforum_posts', 'ndays_act']].values, dtype=torch.float32)
+        return t
+    def load_data_y(self):
+        # Load your preprocessed data from CSV
+        data = pd.read_pickle('processed_data.pkl')
+        data.fillna(0, inplace=True)
+        columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
+        for col in columns_to_convert:
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+        y = torch.tensor(data[['grade', 'explored', 'nevents', 'completed_%']].values, dtype=torch.float32)
+        return y
 
-    def get_dose(self, t):
-        n = t.shape[0]
-        x_tmp = torch.rand([10000, self.n_feature])
-        dose = torch.zeros(n)
-        for i in range(n):
-            t_i = t[i]
-            psi = self.get_outcome(x_tmp, t_i).mean()
-            # psi /= n_test
-            dose[i] = psi
-        return dose
-
-    def get_correct_conditional_desity(self, x, t):
-        derivation_t = derivation_sigmoid(t).numpy()
-        t = inverse_sigmoid(t)
-        loc = self.set_pre_treatment(x)
-        scale = 0.5
-        pdf = norm.pdf(t, loc, scale) * derivation_t
-        return pdf
-
-    def get_correct_desity(self, t):
-        x = torch.rand([10000, 6])
-        cde = self.get_correct_conditional_desity(x, t)
-        return torch.from_numpy(cde.mean(axis=1))
-
-    def get_correct_pdf(self, x, t):
-        derivation_t = derivation_sigmoid(t).numpy()
-        t = inverse_sigmoid(t)
-        loc = self.t
-        scale = 0.5
-        pdf = norm.pdf(t, loc, scale) * derivation_t
-        return pdf
-
-    def get_ideal_weights(self, x, t, power=0.5):
-        t_ = t.reshape(-1, 1)
-        conditional_de = self.get_correct_conditional_desity(x, t)
-        des = torch.from_numpy(self.true_pdf(t_).squeeze())
-        ideal_weights = des / conditional_de
-        ideal_weights = torch.pow(ideal_weights, power)
-        return ideal_weights
+    # def get_dose(self, t):
+    #     n = t.shape[0]
+    #     x_tmp = torch.rand([10000, self.n_feature])
+    #     dose = torch.zeros(n)
+    #     for i in range(n):
+    #         t_i = t[i]
+    #         psi = self.get_outcome(x_tmp, t_i).mean()
+    #         # psi /= n_test
+    #         dose[i] = psi
+    #     return dose
+    #
+    # def get_correct_conditional_desity(self, x, t):
+    #     derivation_t = derivation_sigmoid(t).numpy()
+    #     t = inverse_sigmoid(t)
+    #     loc = self.set_pre_treatment(x)
+    #     scale = 0.5
+    #     pdf = norm.pdf(t, loc, scale) * derivation_t
+    #     return pdf
+    #
+    # def get_correct_desity(self, t):
+    #     x = torch.rand([10000, 6])
+    #     cde = self.get_correct_conditional_desity(x, t)
+    #     return torch.from_numpy(cde.mean(axis=1))
+    #
+    # def get_correct_pdf(self, x, t):
+    #     derivation_t = derivation_sigmoid(t).numpy()
+    #     t = inverse_sigmoid(t)
+    #     loc = self.t
+    #     scale = 0.5
+    #     pdf = norm.pdf(t, loc, scale) * derivation_t
+    #     return pdf
+    #
+    # def get_ideal_weights(self, x, t, power=0.5):
+    #     t_ = t.reshape(-1, 1)
+    #     conditional_de = self.get_correct_conditional_desity(x, t)
+    #     des = torch.from_numpy(self.true_pdf(t_).squeeze())
+    #     ideal_weights = des / conditional_de
+    #     ideal_weights = torch.pow(ideal_weights, power)
+    #     return ideal_weights
     # ... rest  ...
 
 
@@ -110,8 +128,8 @@ def get_iter(self, data, batch_size, shuffle=True, rw=False):
 # columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
 # for col in columns_to_convert:
 #     data[col] = pd.to_numeric(data[col], errors='coerce')
-# # print(data.dtypes)
-#
+# print(data.dtypes)
+
 # x = torch.tensor(data[['LoE_DI', 'age_DI', 'primary_reason', 'learner_type', 'expected_hours_week',
 #                       'discipline', 'course_length']].values, dtype=torch.float32)
 # t = torch.tensor(data[['grade_reqs', 'nforum_posts', 'ndays_act']].values, dtype=torch.float32)

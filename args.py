@@ -40,7 +40,7 @@ class Helper(Parser):
         self.args.n_test = n_test
         self.args.n_eval = n_eval
 
-        local_time = time.strftime("%Y-%m-%d#%H%M%S",time.localtime(time.time()))
+        local_time = time.strftime("%Y-%m-%d#%H%M%S", time.localtime(time.time()))
         self.args.local_time = local_time
 
         self.args.log_dir = './logs/{}/'.format(self.args.data)

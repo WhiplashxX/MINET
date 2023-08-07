@@ -3,7 +3,7 @@ from args import Helper
 from utils.train_helper import *
 from utils.eval_helper import *
 from utils.model_helper import *
-from data.dataset import data1
+from data.dataset import basedata
 from copy import deepcopy
 from utils.data_helper import *
 import os
@@ -21,7 +21,7 @@ def main():
     logger = None
     if args.log:
         logger = logging.getLogger(__name__)
-        logger.setLevel(level = logging.INFO)
+        logger.setLevel(level=logging.INFO)
         if not os.path.exists(args.log_dir):
             os.makedirs(args.log_dir)
         
@@ -35,6 +35,11 @@ def main():
     n_train, n_eval = int(args.n_data * 0.67), int(args.n_data * 0.23)
     n_test = args.n_data - n_train - n_eval
 
+    # args = helper.Namespace()  # 创建一个 argparse 命名空间对象
+    args.data_dir = 'D:\\MINET\\data\\processed_data.pkl'  # 设置包含数据的目录路径
+
+    train_data = load_train(args)
+
     if args.load_data:
         try:
             train_data = load_train(args)
@@ -46,9 +51,9 @@ def main():
             exit()
     # create new data for training and testing
     else:
-        train_data = data1(n_train)
-        eval_data = data1(n_eval)
-        test_data = data1(n_test)
+        train_data = basedata(n_train)
+        eval_data = basedata(n_eval)
+        test_data = basedata(n_test)
 
         if args.save_data:
             save_train(args, train_data)
