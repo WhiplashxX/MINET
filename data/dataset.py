@@ -10,21 +10,61 @@ from scipy import interpolate
 import pandas as pd
 
 
-class basedata():
-    def __init__(self, n, n_feature=6) -> None:
-        self.x, self.t, self.y = self.load_data()
-        self.num_data = n
+class basedata(DataLoader):
+    def __init__(self, filename, n_feature=6) -> None:
+        self.data = self.load_data(filename)  # 调用加载数据函数
+        self.filename = filename
+        self.data.x = self.load_data_x(filename)
+        self.data.t = self.load_data_t(filename)
+        self.data.y = self.load_data_y(filename)
         self.n_feature = n_feature
-        self.load_data()
 
-        # self.true_pdf = self.get_correct_pdf()
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        x, t, y = self.data.x[idx], self.data.t[idx], self.data.y[idx],
+        return (x, t, y)
 
     def __len__(self):
-        return len(self.x)  # 你的数据的长度
+        return len(self.data)  # 你的数据的长度
 
-    def load_data_x(self):
+    def __iter__(self):
+        self.current_idx = 0  # 初始化索引
+        return self
+
+    def __next__(self):
+        if self.current_idx >= len(self):
+            raise StopIteration
+        else:
+            sample = self[self.current_idx]
+            self.current_idx += 1
+            return sample
+
+    def load_data(self, filename):
         # Load your preprocessed data from CSV
-        data = pd.read_pickle('processed_data.pkl')
+        base_dir = 'D:\\MINET\\data\\'
+        if filename is None:
+            path = 'D:\\MINET\\data\\processed_data.pkl'
+        else:
+            path = os.path.join(base_dir, filename)
+        data = pd.read_pickle(path)
+        data.fillna(0, inplace=True)
+        columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
+        for col in columns_to_convert:
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+
+        # print(data.head())#debugging
+        tensor_data = torch.tensor(data.values, dtype=torch.float32)
+        return tensor_data
+
+    def load_data_x(self, filename):
+        # Load your preprocessed data from CSV
+        base_dir = 'D:\\MINET\\data\\'
+        if filename is None:
+            path = 'D:\\MINET\\data\\processed_data.pkl'
+        else:
+            path = os.path.join(base_dir, filename)
+        data = pd.read_pickle(path)
         data.fillna(0, inplace=True)
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
@@ -32,18 +72,30 @@ class basedata():
         x = torch.tensor(data[['LoE_DI', 'age_DI', 'primary_reason', 'learner_type', 'expected_hours_week',
                                     'discipline', 'course_length']].values, dtype=torch.float32)
         return x
-    def load_data_t(self):
+
+    def load_data_t(self, filename):
         # Load your preprocessed data from CSV
-        data = pd.read_pickle('processed_data.pkl')
+        base_dir = 'D:\\MINET\\data\\'
+        if filename is None:
+            path = 'D:\\MINET\\data\\processed_data.pkl'
+        else:
+            path = os.path.join(base_dir, filename)
+        data = pd.read_pickle(path)
         data.fillna(0, inplace=True)
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
         t = torch.tensor(data[['grade_reqs', 'nforum_posts', 'ndays_act']].values, dtype=torch.float32)
         return t
-    def load_data_y(self):
+
+    def load_data_y(self, filename):
         # Load your preprocessed data from CSV
-        data = pd.read_pickle('processed_data.pkl')
+        base_dir = 'D:\\MINET\\data\\'
+        if filename is None:
+            path = 'D:\\MINET\\data\\processed_data.pkl'
+        else:
+            path = os.path.join(base_dir, filename)
+        data = pd.read_pickle(path)
         data.fillna(0, inplace=True)
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
@@ -51,55 +103,28 @@ class basedata():
         y = torch.tensor(data[['grade', 'explored', 'nevents', 'completed_%']].values, dtype=torch.float32)
         return y
 
-    # def get_dose(self, t):
-    #     n = t.shape[0]
-    #     x_tmp = torch.rand([10000, self.n_feature])
-    #     dose = torch.zeros(n)
-    #     for i in range(n):
-    #         t_i = t[i]
-    #         psi = self.get_outcome(x_tmp, t_i).mean()
-    #         # psi /= n_test
-    #         dose[i] = psi
-    #     return dose
-    #
-    # def get_correct_conditional_desity(self, x, t):
-    #     derivation_t = derivation_sigmoid(t).numpy()
-    #     t = inverse_sigmoid(t)
-    #     loc = self.set_pre_treatment(x)
-    #     scale = 0.5
-    #     pdf = norm.pdf(t, loc, scale) * derivation_t
-    #     return pdf
-    #
-    # def get_correct_desity(self, t):
-    #     x = torch.rand([10000, 6])
-    #     cde = self.get_correct_conditional_desity(x, t)
-    #     return torch.from_numpy(cde.mean(axis=1))
-    #
-    # def get_correct_pdf(self, x, t):
-    #     derivation_t = derivation_sigmoid(t).numpy()
-    #     t = inverse_sigmoid(t)
-    #     loc = self.t
-    #     scale = 0.5
-    #     pdf = norm.pdf(t, loc, scale) * derivation_t
-    #     return pdf
-    #
-    # def get_ideal_weights(self, x, t, power=0.5):
-    #     t_ = t.reshape(-1, 1)
-    #     conditional_de = self.get_correct_conditional_desity(x, t)
-    #     des = torch.from_numpy(self.true_pdf(t_).squeeze())
-    #     ideal_weights = des / conditional_de
-    #     ideal_weights = torch.pow(ideal_weights, power)
-    #     return ideal_weights
-    # ... rest  ...
 
-
-def get_iter(self, data, batch_size, shuffle=True, rw=False):
-    dataset = basedata(data)
+def get_iter(filename, batch_size, shuffle=True, rw=False):
+    dataset = basedata(filename=filename)
     iterator = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
     return iterator
 
 
+# dataloader = get_iter(filename='train.pkl', batch_size=500)
+# for batch in dataloader:
+#     print("Batch:")
+#     print(batch)
+#     x_batch, t_batch, y_batch = batch
+#     print("x_batch shape:", x_batch.shape)
+#     print("t_batch shape:", t_batch.shape)
+#     print("y_batch shape:", y_batch.shape)
+# print("Number of batches:", len(dataloader))
+
+
 # ---------------------------------------------------------
+# datax = basedata(filename='train.pkl').load_data_x(filename='train.pkl')
+# print(datax)
 
 
 # data = pd.read_pickle('processed_data.pkl')

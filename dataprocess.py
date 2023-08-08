@@ -156,7 +156,7 @@ eval_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=4
 train_data.to_csv('train_dataset.csv', index=False)
 eval_data.to_csv('val_dataset.csv', index=False)
 test_data.to_csv('test_dataset.csv', index=False)
-
+# 保存划分后的数据集为pkl文件
 train_data.to_pickle('train_dataset.pkl')
 eval_data.to_pickle('val_dataset.pkl')
 test_data.to_pickle('test_dataset.pkl')

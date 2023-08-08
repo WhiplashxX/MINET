@@ -1,6 +1,8 @@
 import pickle
 import os
 
+import pandas as pd
+
 
 def save_obj(obj, dir, name):
     if not os.path.exists(dir):
@@ -11,7 +13,12 @@ def save_obj(obj, dir, name):
 
 def load_obj(dir, name):
     with open(dir + name + '.pkl', 'rb') as f:
-        return pickle.load(f)
+        data = pickle.load(f)
+        data.fillna(0, inplace=True)
+        columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
+        for col in columns_to_convert:
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+        return data
 
 
 def save_args(args):

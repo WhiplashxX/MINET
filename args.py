@@ -8,7 +8,7 @@ import random
 class Parser(object):
     def __init__(self):
         parser = argparse.ArgumentParser("dose-response estimation via neural network")
-        parser.add_argument('--data', type=str, default='sim')
+        parser.add_argument('--data', type=str, default='D:\\MINET\\data\\train.pkl')
         parser.add_argument('--verbose', type=int, default=50, help='print train info freq')
         parser.add_argument('--n_data', type=int, default=5000)
         parser.add_argument('--n_epochs', type=int, default=200, help='num of epochs to train')
@@ -28,6 +28,7 @@ class Parser(object):
         self.args = parser.parse_args()
         if self.args.seed is None:
             self.args.seed = random.randint(0, 10000)
+
 
 class Helper(Parser):
     def __init__(self):
