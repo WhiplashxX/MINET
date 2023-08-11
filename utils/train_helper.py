@@ -48,9 +48,9 @@ def train(model, data, args):
             # y torch.Size([500, 3])
             optimizer.zero_grad()
             y_pre, w, _ = model(x, t)
-            print(y_pre.shape, w.shape)
+            # print("y_pre shape", y_pre.shape, "w shape", w.shape)
             loss = rwt_regression_loss(w, y, y_pre)
-            print(loss)
+            # print("loSS", loss)
             total_loss.append(loss.data)
 
             mmd = IPM_loss(x, t, w, k=5)

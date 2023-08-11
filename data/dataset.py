@@ -70,7 +70,7 @@ class basedata(DataLoader):
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
         x = torch.tensor(data[['LoE_DI', 'age_DI', 'primary_reason', 'learner_type', 'expected_hours_week',
-                                    'discipline', 'course_length']].values, dtype=torch.float32)
+                               'discipline']].values, dtype=torch.float32)  # 'course_length'
         return x
 
     def load_data_t(self, filename):
@@ -85,7 +85,7 @@ class basedata(DataLoader):
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
-        t = torch.tensor(data[['grade_reqs', 'nforum_posts', 'ndays_act']].values, dtype=torch.float32)
+        t = torch.tensor(data[['grade_reqs']].values, dtype=torch.float32)  # , 'nforum_posts', 'ndays_act'
         return t
 
     def load_data_y(self, filename):
@@ -100,8 +100,12 @@ class basedata(DataLoader):
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
-        y = torch.tensor(data[['grade', 'explored', 'nevents', 'completed_%']].values, dtype=torch.float32)
+        y = torch.tensor(data[['grade']].values, dtype=torch.float32)  # , 'explored', 'nevents', 'completed_%'
         return y
+
+    def get_outcome(self, filename):
+        """ used in eval_helper """
+        return self.load_data_y(filename)
 
 
 def get_iter(filename, batch_size, shuffle=True, rw=False):
@@ -109,7 +113,6 @@ def get_iter(filename, batch_size, shuffle=True, rw=False):
     iterator = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
     return iterator
-
 
 # dataloader = get_iter(filename='train.pkl', batch_size=500)
 # for batch in dataloader:

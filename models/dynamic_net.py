@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F 
+import torch.nn.functional as F
 import numpy as np
+
 
 class Truncated_power(nn.Module):
     def __init__(self, degree, knots):
@@ -28,28 +29,30 @@ class Truncated_power(nn.Module):
             else:
                 out[:, _] = (self.relu(x - self.knots[_ - self.degree - 1])) ** self.degree
 
-        return out 
+        return out
+
 
 class MLP_treatnet(nn.Module):
     def __init__(self, num_out, n_hidden=10, num_in=4) -> None:
         super(MLP_treatnet, self).__init__()
         self.num_in = num_in
-        self.hidden1 = torch.nn.Linear(num_in, n_hidden)            
-        self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)    
+        self.hidden1 = torch.nn.Linear(num_in, n_hidden)
+        self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)
         self.predict = torch.nn.Linear(n_hidden, num_out)
         self.act = nn.ReLU()
-    
+
     def forward(self, x):
         x_mix = torch.zeros([x.shape[0], 3])
         x_mix = x_mix.to(x.device)
         x_mix[:, 0] = 0
-        
+
         x_mix[:, 1] = torch.cos(x * np.pi)
         x_mix[:, 2] = torch.sin(x * np.pi)
         h = self.act(self.hidden1(x_mix))     # relu
         y = self.predict(h)
 
         return y
+
 
 class Dynamic_FC(nn.Module):
     def __init__(self, ind, outd, degree, knots, act='relu', isbias=1, islastlayer=0, dynamic_type='power'):

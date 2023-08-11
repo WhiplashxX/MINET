@@ -3,15 +3,16 @@ import torch.nn as nn
 
 from models.dynamic_net import Dynamic_FC
 
+
 class ADMIT(nn.Module):
     def __init__(self, args):
         super(ADMIT, self).__init__()
         self.args = args
         input_dim = args.input_dim
-        init=args.init
+        init = args.init
         dynamic_type = args.dynamic_type
-        self.cfg_hidden = [(input_dim, 50, 1, 'relu'), (50, 50, 1, 'relu')]
-        self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
+        self.cfg_hidden = [(input_dim, 50, 1, 'relu'), (50, 50, 1, 'relu')]  # 50->52
+        self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]  # 50->52
         self.degree = 2
         self.knots = [0.33, 0.66]
 
@@ -20,6 +21,7 @@ class ADMIT(nn.Module):
         hidden_dim = -1
         for layer_idx, layer_cfg in enumerate(self.cfg_hidden):
             # fc layer
+            # self.cfg_hidden = [(input_dim, 52, 1, 'relu'), (50, 52, 1, 'relu')]  # 50->52
             if layer_idx == 0:
                 self.feature_weight = nn.Linear(in_features=layer_cfg[0], out_features=layer_cfg[1], bias=layer_cfg[2])
                 hidden_blocks.append(self.feature_weight)
@@ -38,6 +40,7 @@ class ADMIT(nn.Module):
 
         # construct the inference network
         blocks = []
+        # self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
         for layer_idx, layer_cfg in enumerate(self.cfg):
             if layer_idx == len(self.cfg)-1: # last layer
                 last_layer = Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3], isbias=layer_cfg[2], islastlayer=1, dynamic_type=dynamic_type)
@@ -50,10 +53,11 @@ class ADMIT(nn.Module):
 
         # construct the rw-weighting network
         rwt_blocks = []
+        # self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
         for layer_idx, layer_cfg in enumerate(self.cfg):
-            if layer_idx == len(self.cfg)-1: # last layer
+            if layer_idx == len(self.cfg)-1:  # last layer
                 last_layer = Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3], isbias=layer_cfg[2], islastlayer=1, dynamic_type='mlp')
-                
+
             else:
                 rwt_blocks.append(
                     Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3], isbias=layer_cfg[2], islastlayer=0, dynamic_type='mlp'))
@@ -65,13 +69,16 @@ class ADMIT(nn.Module):
 
     def forward(self, x, t):
         hidden = self.hidden_features(x)
+        # print("Hidden shape:", hidden.shape)  # [500, 50]
         hidden = self.drop_hidden(hidden)
-        t_hidden = torch.cat((torch.unsqueeze(t, 1), hidden), 1)
+        t_hidden = torch.cat((t, hidden), dim=1)  # [500, 53]
         w = self.rwt(t_hidden)
+        # print("RW-weighting output shape:", w.shape)  # 打印 rw-weighting 网络部分的输出形状
         w = torch.sigmoid(w) * 2
         w = torch.exp(w) / torch.exp(w).sum() * w.shape[0]
-        
+
         out = self.out(t_hidden)
+        # print("Output shape:", out.shape)  # 打印推断网络部分的输出形状
 
         return out, w, hidden
 
