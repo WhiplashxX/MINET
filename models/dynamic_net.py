@@ -25,7 +25,7 @@ class Truncated_power(nn.Module):
         out = torch.zeros(x.shape[0], self.num_of_basis, device=x.device)
         for _ in range(self.num_of_basis):
             if _ <= self.degree:
-                out[:, _] = x**_
+                out[:, _] = x ** _
             else:
                 out[:, _] = (self.relu(x - self.knots[_ - self.degree - 1])) ** self.degree
 
@@ -48,7 +48,7 @@ class MLP_treatnet(nn.Module):
 
         x_mix[:, 1] = torch.cos(x * np.pi)
         x_mix[:, 2] = torch.sin(x * np.pi)
-        h = self.act(self.hidden1(x_mix))     # relu
+        h = self.act(self.hidden1(x_mix))  # relu
         y = self.predict(h)
 
         return y
@@ -68,7 +68,7 @@ class Dynamic_FC(nn.Module):
 
         if dynamic_type == 'power':
             self.spb = Truncated_power(degree, knots)
-            self.d = self.spb.num_of_basis # num of basis
+            self.d = self.spb.num_of_basis  # num of basis
         else:
             self.spb = MLP_treatnet(num_out=10, num_in=3)
             self.d = 10
@@ -94,13 +94,14 @@ class Dynamic_FC(nn.Module):
     def forward(self, x):
         # x: batch_size * (treatment, other feature)
         x_feature = x[:, 1:]
+
         x_treat = x[:, 0]
 
-        x_feature_weight = torch.matmul(self.weight.T, x_feature.T).T # bs, outd, d
+        x_feature_weight = torch.matmul(self.weight.T, x_feature.T).T  # bs, outd, d
 
-        x_treat_basis = self.spb(x_treat) # bs, d
+        x_treat_basis = self.spb(x_treat)  # bs, d
         x_treat_basis_ = torch.unsqueeze(x_treat_basis, 1)
-        out = torch.sum(x_feature_weight * x_treat_basis_, dim=2) # bs, outd
+        out = torch.sum(x_feature_weight * x_treat_basis_, dim=2)  # bs, outd
 
         if self.isbias:
             out_bias = torch.matmul(self.bias, x_treat_basis.T).T
@@ -112,3 +113,21 @@ class Dynamic_FC(nn.Module):
             out = torch.cat((torch.unsqueeze(x_treat, 1), out), 1)
 
         return out
+
+
+# Targeted Regularizer
+class TR(nn.Module):
+    def __init__(self, degree, knots):
+        super(TR, self).__init__()
+        self.spb = Truncated_power(degree, knots)
+        self.d = self.spb.num_of_basis  # num of basis
+        self.weight = nn.Parameter(torch.rand(self.d), requires_grad=True)
+
+    def forward(self, t):
+        out = self.spb.forward(t)
+        out = torch.matmul(out, self.weight)
+        return out
+
+    def _initialize_weights(self):
+        # self.weight.data.normal_(0, 0.01)
+        self.weight.data.zero_()

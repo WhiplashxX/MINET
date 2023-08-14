@@ -64,9 +64,9 @@ def main():
     model.to(device)
 
     for epoch, model, loss in train(model, train_data, args):
-        print("epoch: ", epoch, "loss= ", loss)
+        print("epoch:", epoch, "loss=", loss)
         if epoch % args.verbose == 0:
-            _, mse, _ = eval(model, args, train_data, eval_data, test_data)
+            _, mse, _ = eval(model, args, test_data)
             print('eval_mse {:.5f}'.format(mse))
 
             if logger:

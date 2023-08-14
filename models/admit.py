@@ -11,8 +11,8 @@ class ADMIT(nn.Module):
         input_dim = args.input_dim
         init = args.init
         dynamic_type = args.dynamic_type
-        self.cfg_hidden = [(input_dim, 50, 1, 'relu'), (50, 50, 1, 'relu')]  # 50->52
-        self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]  # 50->52
+        self.cfg_hidden = [(input_dim, 50, 1, 'relu'), (50, 50, 1, 'relu')]
+        self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
         self.degree = 2
         self.knots = [0.33, 0.66]
 
@@ -42,7 +42,7 @@ class ADMIT(nn.Module):
         blocks = []
         # self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
         for layer_idx, layer_cfg in enumerate(self.cfg):
-            if layer_idx == len(self.cfg)-1: # last layer
+            if layer_idx == len(self.cfg)-1:  # last layer
                 last_layer = Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3], isbias=layer_cfg[2], islastlayer=1, dynamic_type=dynamic_type)
             else:
                 blocks.append(
@@ -71,7 +71,7 @@ class ADMIT(nn.Module):
         hidden = self.hidden_features(x)
         # print("Hidden shape:", hidden.shape)  # [500, 50]
         hidden = self.drop_hidden(hidden)
-        t_hidden = torch.cat((t, hidden), dim=1)  # [500, 53]
+        t_hidden = torch.cat((t, hidden), dim=1)  # [500, 52]
         w = self.rwt(t_hidden)
         # print("RW-weighting output shape:", w.shape)  # 打印 rw-weighting 网络部分的输出形状
         w = torch.sigmoid(w) * 2

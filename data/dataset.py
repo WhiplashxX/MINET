@@ -85,8 +85,16 @@ class basedata(DataLoader):
         columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
-        t = torch.tensor(data[['grade_reqs']].values, dtype=torch.float32)  # , 'nforum_posts', 'ndays_act'
-        return t
+        t = torch.tensor(data[['grade_reqs', 'ndays_act', 'nforum_posts']].values, dtype=torch.float32)  #
+        weight1 = torch.tensor([0.504])
+        weight2 = torch.tensor([0.433])
+        weight3 = torch.tensor([0.063])
+        weighted_average = torch.sum(t * torch.cat((weight1, weight2, weight3), dim=0), dim=1)
+        # torch.Size([33195])
+
+        weighted_average = weighted_average.unsqueeze(1)
+
+        return weighted_average
 
     def load_data_y(self, filename):
         # Load your preprocessed data from CSV
@@ -114,6 +122,7 @@ def get_iter(filename, batch_size, shuffle=True, rw=False):
 
     return iterator
 
+
 # dataloader = get_iter(filename='train.pkl', batch_size=500)
 # for batch in dataloader:
 #     print("Batch:")
@@ -126,8 +135,8 @@ def get_iter(filename, batch_size, shuffle=True, rw=False):
 
 
 # ---------------------------------------------------------
-# datax = basedata(filename='train.pkl').load_data_x(filename='train.pkl')
-# print(datax)
+# datax = basedata(filename='train.pkl').load_data_t(filename='train.pkl')
+# print(datax.shape)
 
 
 # data = pd.read_pickle('processed_data.pkl')
