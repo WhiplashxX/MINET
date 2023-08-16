@@ -4,18 +4,19 @@ import time
 
 from data.dataset import get_iter
 from utils.log_helper import save_obj, load_obj
+from utils.model_helper import conditional_mutual_info
 
 
-def eval(model, args, test_data):
+def eval(model, args):
     data = pd.read_pickle("D:\\MINET\\data\\test.pkl")
     data.fillna(0, inplace=True)
     columns_to_convert = ['nevents', 'explored', 'grade_reqs', 'nforum_posts', 'course_length', 'ndays_act']
     for col in columns_to_convert:
         data[col] = pd.to_numeric(data[col], errors='coerce')
     x = torch.tensor(data[['LoE_DI', 'age_DI', 'primary_reason', 'learner_type', 'expected_hours_week',
-                           'discipline']].values, dtype=torch.float32)  # 'course_length'
+                           'discipline']].values, dtype=torch.float32)
 
-    y = torch.tensor(data[['grade']].values, dtype=torch.float32)  # , 'explored', 'nevents', 'completed_%'
+    y = torch.tensor(data[['grade']].values, dtype=torch.float32)
 
     model.eval()
 
@@ -27,19 +28,34 @@ def eval(model, args, test_data):
     starttime = time.time()
 
     x = x.to(args.device)
-    t0 = torch.tensor(data[['grade_reqs', 'ndays_act', 'nforum_posts']].values, dtype=torch.float32)  #
-    weight1 = torch.tensor([0.504])
-    weight2 = torch.tensor([0.433])
-    weight3 = torch.tensor([0.063])
-    weighted_average = torch.sum(t0 * torch.cat((weight1, weight2, weight3), dim=0), dim=1)
+    t = torch.tensor(data[['grade_reqs', 'ndays_act', 'nforum_posts']].values, dtype=torch.float32)  #
+    t_transposed = t.transpose(0, 1)  # so we need transpose ->[3,500]
+    cmi_values = []
+    for i, ti in enumerate(t_transposed):
+        # for ti in t: 将 t 视为一个矩阵，每次迭代将从 t 的每一行中取出一行作为 ti。
+        # 因此，在每次迭代中，ti 是一个表示一个样本的一维张量，其长度为 3，表示你的t 张量的列数
+        # ti->[1,500]/x->[500,6]
+        ti = ti.unsqueeze(1)
+        ti = ti*(1 - 0.369*i)
+
+        cmi = conditional_mutual_info(ti, y)
+        cmi_values.append(cmi)
+    # 假设 cmi_values 是包含三个 cmi 值的列表
+    # 假设权重为 w，其中 w 是一个包含三个权重的向量
+
+    w = torch.tensor(cmi_values)
+    w = torch.softmax(w, dim=0)
+    print(w)
+    # weight1 = torch.tensor([0.333333])
+    # weight2 = torch.tensor([0.333333])
+    # weight3 = torch.tensor([0.333333])
+    weighted_average = torch.sum(t * w, dim=1)
     weighted_average = weighted_average.unsqueeze(1)
 
     for i in range(n_test):
         t = (torch.ones(x.shape[0]) * weighted_average[i]).to(args.device)
         t = t.unsqueeze(1)
 
-        # t = (torch.ones(x.shape[0]) * test_data.t[i]).to(args.device)
-        # t = weighted_average.to(args.device)
         out = model(x, t)
         out = out[0].data.squeeze().cpu()
 

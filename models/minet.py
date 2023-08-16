@@ -4,9 +4,9 @@ import torch.nn as nn
 from models.dynamic_net import Dynamic_FC
 
 
-class ADMIT(nn.Module):
+class MINET(nn.Module):
     def __init__(self, args):
-        super(ADMIT, self).__init__()
+        super(MINET, self).__init__()
         self.args = args
         input_dim = args.input_dim
         init = args.init
@@ -66,6 +66,25 @@ class ADMIT(nn.Module):
         self.rwt = nn.Sequential(*rwt_blocks)
 
         self._initialize_weights(init)
+
+        # # construct the X network
+        # # 条件互信息的方式来确定t的变量的权重。
+        # x_blocks = []
+        # # self.cfg = [(50, 50, 1, 'relu'), (50, 1, 1, 'id')]
+        # for layer_idx, layer_cfg in enumerate(self.cfg):
+        #     if layer_idx == len(self.cfg) - 1:  # last layer
+        #         last_layer = Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3],
+        #                                 isbias=layer_cfg[2], islastlayer=1, dynamic_type='mlp')
+        #
+        #     else:
+        #         x_blocks.append(
+        #             Dynamic_FC(layer_cfg[0], layer_cfg[1], self.degree, self.knots, act=layer_cfg[3],
+        #                        isbias=layer_cfg[2], islastlayer=0, dynamic_type='mlp'))
+        # x_blocks.append(last_layer)
+        #
+        # self.x = nn.Sequential(*x_blocks)
+        #
+        # self._initialize_weights(init)
 
     def forward(self, x, t):
         hidden = self.hidden_features(x)

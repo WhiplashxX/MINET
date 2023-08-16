@@ -43,9 +43,6 @@ def train(model, data, args):
                 y = args.scaler.transform(y.reshape(-1, 1))
                 y = torch.from_numpy(y)
 
-            # x torch.Size([500, 7])
-            # t torch.Size([500, 3])
-            # y torch.Size([500, 3])
             optimizer.zero_grad()
             y_pre, w, _ = model(x, t)
             # print("y_pre shape", y_pre.shape, "w shape", w.shape)
