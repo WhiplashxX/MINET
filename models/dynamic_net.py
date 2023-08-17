@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -113,6 +115,56 @@ class Dynamic_FC(nn.Module):
             out = torch.cat((torch.unsqueeze(x_treat, 1), out), 1)
 
         return out
+
+
+# ------------propensity------------
+
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        stdv = 1 / math.sqrt(m.weight.size(1))
+        torch.nn.init.normal_(m.weight, mean=0.0, std=stdv)
+        # torch.nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0)
+
+
+class BaseModel(nn.Module):
+    def __init__(self, input_dim, base_dim, cfg):
+        super(BaseModel, self).__init__()
+        self.SpNN = nn.Sequential(
+            nn.Linear(input_dim, base_dim),
+            # nn.BatchNorm1d(base_dim),
+            nn.ELU(),
+            nn.Dropout(p=0.01),
+            nn.Linear(base_dim, base_dim),
+            # nn.BatchNorm1d(base_dim),
+            nn.ELU(),
+            nn.Dropout(p=0.01),
+            nn.Linear(base_dim, base_dim),
+            # nn.BatchNorm1d(base_dim),
+            nn.ELU(),
+            nn.Dropout(p=0.01)
+        )
+        self.SpNN.apply(init_weights)
+
+    def forward(self, x):  # input->[500,1]
+        logits = self.SpNN(x)
+        return logits
+
+
+class PropstyNetwork(nn.Module):
+    """propensity network"""
+
+    def __init__(self, input_dim, base_dim, cfg):
+        super(PropstyNetwork, self).__init__()
+        self.baseModel = BaseModel(input_dim, base_dim, cfg)
+        self.logitLayer = nn.Linear(base_dim, 1)
+        self.sigmoid = nn.Sigmoid()
+        self.logitLayer.apply(init_weights)
+
+    def forward(self, inputs):
+        inputs = self.baseModel(inputs)
+        p = self.logitLayer(inputs)
+        return p
 
 
 # Targeted Regularizer

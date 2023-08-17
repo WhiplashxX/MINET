@@ -2,7 +2,8 @@ import torch
 from data.dataset import get_iter
 import numpy as np
 import random
-from utils.model_helper import IPM_loss
+
+from utils.model_helper import IPM_loss, wassIPM_loss
 from utils import data_helper
 
 
@@ -50,7 +51,7 @@ def train(model, data, args):
             # print("loSS", loss)
             total_loss.append(loss.data)
 
-            mmd = IPM_loss(x, t, w, k=5)
+            mmd = wassIPM_loss(x, t, w, k=5)
             mmds.append(mmd.data)
             loss = loss + mmd
 

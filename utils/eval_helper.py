@@ -36,9 +36,15 @@ def eval(model, args):
         # 因此，在每次迭代中，ti 是一个表示一个样本的一维张量，其长度为 3，表示你的t 张量的列数
         # ti->[1,500]/x->[500,6]
         ti = ti.unsqueeze(1)
-        ti = ti*(1 - 0.369*i)
+        if i == 0:
+            ti = ti * 3
+        elif i == 1:
+            ti = ti / 2
+        elif i == 2:
+            ti = ti / 3
+        ti = ti * (1 - 0.456 * i)
 
-        cmi = conditional_mutual_info(ti, y)
+        cmi = conditional_mutual_info(ti, y)  # 条件互信息的方式来确定t的变量的权重。
         cmi_values.append(cmi)
     # 假设 cmi_values 是包含三个 cmi 值的列表
     # 假设权重为 w，其中 w 是一个包含三个权重的向量

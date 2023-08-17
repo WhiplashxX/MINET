@@ -10,7 +10,7 @@ class Parser(object):
     def __init__(self):
         parser = argparse.ArgumentParser("dose-response estimation via neural network")
         parser.add_argument('--data', type=str, default='D:\\MINET\\data\\train.pkl')
-        parser.add_argument('--verbose', type=int, default=20, help='print train info freq')
+        parser.add_argument('--verbose', type=int, default=10, help='print train info freq')
         parser.add_argument('--n_data', type=int, default=5000)
         parser.add_argument('--n_epochs', type=int, default=300, help='num of epochs to train')
         parser.add_argument('--batch_size', type=int, default=500)

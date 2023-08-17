@@ -86,9 +86,9 @@ class basedata(DataLoader):
         for col in columns_to_convert:
             data[col] = pd.to_numeric(data[col], errors='coerce')
         t = torch.tensor(data[['grade_reqs', 'ndays_act', 'nforum_posts']].values, dtype=torch.float32)  #
-        weight1 = torch.tensor([0.504])
-        weight2 = torch.tensor([0.433])
-        weight3 = torch.tensor([0.063])
+        weight1 = torch.tensor([0.4185])
+        weight2 = torch.tensor([0.4722])
+        weight3 = torch.tensor([0.1093])
         weighted_average = torch.sum(t * torch.cat((weight1, weight2, weight3), dim=0), dim=1)
         # torch.Size([33195])
 

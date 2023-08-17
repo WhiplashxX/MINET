@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 import os
 import numpy as np
+from scipy.stats import wasserstein_distance
 
 
 def pdist2sq(A, B):
@@ -47,6 +48,66 @@ def IPM_loss(x, t, w, k=5, rbf_sigma=1):
     return loss.mean()
 
 
+def calculate_wassIPM(A, B):
+    A_np = A.detach().numpy()
+    A = A_np.reshape(-1)
+    B_np = B.detach().numpy()
+    B = B_np.reshape(-1)
+    wass_distance = wasserstein_distance(A, B)
+    return wass_distance
+
+
+def wassIPM_loss(x, t, w, k=5):
+    _, idx = torch.sort(t)
+    xw = x * w
+    sorted_x = x[idx]
+    sorted_xw = xw[idx]
+    split_x = torch.tensor_split(sorted_x, k)
+    split_xw = torch.tensor_split(sorted_xw, k)
+    loss = torch.zeros(k)
+
+    for i in range(k):
+        A = split_xw[i]
+        tmp_loss = torch.zeros(k - 1)
+        idx = 0
+
+        for j in range(k):
+            if i == j:
+                continue
+            B = split_x[j]
+            # A = np.array(A).flatten()
+            # B = np.array(B).flatten()
+            partial_loss = calculate_wassIPM(A, B)
+            tmp_loss[idx] = partial_loss
+            idx += 1
+
+        loss[i] = tmp_loss.max()
+
+    return loss.mean()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ----------------mit---------------------
 def mutual_info(joint, marginal, prop, **kwargs):
     sample_wise_max = marginal.max(dim=0)[0]
@@ -64,12 +125,6 @@ def conditional_mutual_info(joint, marginal_x, **kwargs):
     # 上述计算与之前一样，只是针对 x 的边缘分布进行计算
     mi = joint.mean() - (torch.log(torch.exp(
         marginal_x - sample_wise_max_x.unsqueeze(0)).mean(dim=0)) + sample_wise_max_x)
-    # print("joint", joint.shape)  # [7114, 2]
-    # print("marginal_x", marginal_x.shape)  # [7114, 7])
-    # print("sample_wise_max_x", sample_wise_max_x.shape)  # [7])
-    # print("mi", mi.shape)  # [7]
-    # print("sample_wise_max_x.unsqueeze(0))", sample_wise_max_x.unsqueeze(0).shape)
-    # print("(torch.exp(marginal_x - sample_wise_max_x.unsqueeze(0)).mean(dim=0))", (torch.exp(marginal_x - sample_wise_max_x.unsqueeze(0)).mean(dim=0)).shape)  # 7
 
     return torch.sqrt(2 * mi + 1) - 1
     # 返回计算结果
